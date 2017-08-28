@@ -848,43 +848,6 @@ bool PixelBadModules::getZAxisOverlapRangeBarrelEndcap(const ClusterSpan & cspan
     range =  std::pair<float,float>(lower,upper);
     return true;
 }
-void PixelBadModules::compareClusterSpansBarrel(){
-    Stream ss;
-    ClusterSpanContainerPair cspans = clusterSpans();
-    for(auto const & cspan : cspans.first){
-        ss << std::endl;
-        clusterSpanInfo(cspan,ss);
-        edm::LogPrint("")<< ss.str();ss.str(std::string());
-        for(auto const & cspanComp : cspans.first){
-            if(&cspan == &cspanComp){continue;}
-            if(phiRangesOverlap(cspan.phiSpan,cspanComp.phiSpan)){
-                std::pair<float,float> range;
-                if(getZAxisOverlapRangeBarrel(cspan,cspanComp,range)){
-
-                }
-            }
-        }
-    }
-    for(auto const & cspan : cspans.second){
-        ss << std::endl;
-        clusterSpanInfo(cspan,ss);
-        edm::LogPrint("")<< ss.str();ss.str(std::string());
-        for(auto const & cspanComp : cspans.second){
-            if(&cspan == &cspanComp){continue;}
-            if(phiRangesOverlap(cspan.phiSpan,cspanComp.phiSpan)){
-            }
-        }
-    }
-    for(auto const & cspanBar : cspans.first){
-        ss << std::endl;
-        clusterSpanInfo(cspanBar,ss);
-        edm::LogPrint("")<< ss.str();ss.str(std::string());
-        for(auto const & cspanEnd : cspans.second){
-            if(&cspanBar == &cspanEnd){continue;}
-            if(phiRangesOverlap(cspanBar.phiSpan,cspanEnd.phiSpan));
-        }
-    }
-}
 PixelBadModules::OverlapSpansContainer PixelBadModules::overlappingSpans(float zAxisThreshold){    
     OverlapSpansContainer overlapSpansContainer;
     // find clusterSpans ie phi,r,z limits for detector clusters that are not working
@@ -936,6 +899,27 @@ PixelBadModules::OverlapSpansContainer PixelBadModules::overlappingSpans(float z
         }
     }
 
+    // Then comparison between barrel and endcap  clusters
+    for(ClusterSpanContainer::const_iterator barSpanIt = cspans.first.begin(); barSpanIt != cspans.first.end();++barSpanIt){
+        OverlapSpans overlapSpans;
+        for(ClusterSpanContainer::const_iterator endSpanIt = cspans.second.begin();endSpanIt != cspans.second.end();++endSpanIt){
+            if(phiRangesOverlap(barSpanIt->phiSpan,endSpanIt->phiSpan)){
+                std::pair<float,float> range(0,0);
+                if(getZAxisOverlapRangeBarrelEndcap(*barSpanIt,*endSpanIt,range)){
+                    if(-zAxisThreshold <= range.second && range.first <= zAxisThreshold){
+                        if(overlapSpans.empty()){
+                            overlapSpans.push_back(*barSpanIt);
+                        }
+                        overlapSpans.push_back(*endSpanIt);
+                    }
+                }
+                
+            }       
+        }
+        if(!overlapSpans.empty()){
+            overlapSpansContainer.push_back(overlapSpans);
+        }
+    }
 
 
     return overlapSpansContainer;
