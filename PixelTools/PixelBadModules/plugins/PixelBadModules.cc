@@ -50,6 +50,8 @@ class PixelBadModules : public edm::one::EDAnalyzer<edm::one::SharedResources>  
         // Output type aliases
         using ClusterSpanContainer = std::vector<ClusterSpan>;
         using ClusterSpanContainerPair = std::pair<ClusterSpanContainer,ClusterSpanContainer>;
+        using OverlapSpans = std::vector<ClusterSpan>;
+        using OverlapSpansContainer = std::vector<OverlapSpans>;
     private:
         // static data members
         const static unsigned int nLayer1Ladders = 12;
@@ -84,6 +86,7 @@ class PixelBadModules : public edm::one::EDAnalyzer<edm::one::SharedResources>  
         void printBadPixelDets();
         void printBadClusters();
         void printBadClusterSpans();
+        void printOverlapSpans();
         // Functions for finding bad clusters
         static bool phiRangesOverlap(const float x1,const float x2, const float y1,const float y2);
         static bool phiRangesOverlap(const Span_t&phiSpanA, const Span_t&phiSpanB);
@@ -108,6 +111,7 @@ class PixelBadModules : public edm::one::EDAnalyzer<edm::one::SharedResources>  
         bool getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, const ClusterSpan & cspanB,std::pair<float,float> & range);
         bool getZAxisOverlapRangeBarrelEndcap(const ClusterSpan & cspanA, const ClusterSpan & cspanB,std::pair<float,float> & range);
         void compareClusterSpansBarrel();
+        OverlapSpansContainer overlappingSpans(float zAxisThreshold = std::numeric_limits<float>::infinity());
 };
 //analyzer functions
 PixelBadModules::PixelBadModules(const edm::ParameterSet& iConfig){}
@@ -123,13 +127,11 @@ void PixelBadModules::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     this->getPixelDetsBarrel();
     this->getPixelDetsEndcap();
     this->getBadPixelDets();
-    edm::LogPrint("") << "Hello there";
     //timer
     std::chrono::time_point<std::chrono::system_clock> start,end;
     start = std::chrono::system_clock::now();
     // Comparing
-    this->compareClusterSpansBarrel();
-
+    this->printOverlapSpans();
     // timer
     end = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_time = end-start;
@@ -296,6 +298,18 @@ void PixelBadModules::printBadClusterSpans(){
     }
     for(auto const & cspan : cspans.second){
         clusterSpanInfo(cspan,ss);ss<<std::endl;
+    }
+    edm::LogPrint("") << ss.str();
+}
+void PixelBadModules::printOverlapSpans(){
+    OverlapSpansContainer ospans = this->overlappingSpans();
+    Stream ss;
+    for(auto const & spans : ospans){
+        ss << "Overlapping clusters:\n";
+        for(auto const cspan : spans){
+            clusterSpanInfo(cspan,ss);
+            ss << std::endl;
+        }
     }
     edm::LogPrint("") << ss.str();
 }
@@ -724,6 +738,11 @@ bool PixelBadModules::getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, con
             cspanFurther = cspanB;
             cspanNearer = cspanA;
         }else {
+            //edm::LogPrint("") << "No overlap, same disk propably. Spans:";
+            //Stream ss;
+            //clusterSpanInfo(cspanA,ss);ss<<std::endl;clusterSpanInfo(cspanB,ss);ss<<std::endl;
+            //edm::LogPrint("") << ss.str();ss.str(std::string());
+            //edm::LogPrint("") << "**";
             return false;
         }
         if(cspanFurther.rSpan.second > cspanNearer.rSpan.first){
@@ -738,16 +757,26 @@ bool PixelBadModules::getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, con
                 upper = std::numeric_limits<float>::infinity();
             }
         }else{
+            //edm::LogPrint("") << "No overlap, further cluster is lower. Spans:";
+            //Stream ss;
+            //clusterSpanInfo(cspanA,ss);ss<<std::endl;clusterSpanInfo(cspanB,ss);ss<<std::endl;
+            //edm::LogPrint("") << ss.str();ss.str(std::string());
+            //edm::LogPrint("") << "**";
             return false;
         }
     }else if(cspanA.zSpan.first > 0 && cspanB.zSpan.first > 0){
         if(cspanA.zSpan.first > cspanB.zSpan.second ){
             cspanFurther = cspanA;
             cspanNearer = cspanB;
-        }else if(cspanB.zSpan.first < cspanB.zSpan.first){
-            cspanFurther = cspanA;
-            cspanNearer = cspanB;
+        }else if(cspanB.zSpan.first > cspanA.zSpan.second){
+            cspanFurther = cspanB;
+            cspanNearer = cspanA;
         }else{
+            //edm::LogPrint("") << "No overlap, same disk propably. Spans:";
+            //Stream ss;
+            //clusterSpanInfo(cspanA,ss);ss<<std::endl;clusterSpanInfo(cspanB,ss);ss<<std::endl;
+            //edm::LogPrint("") << ss.str();ss.str(std::string());
+            //edm::LogPrint("") << "**";
             return false;
         }
         if(cspanFurther.rSpan.second > cspanNearer.rSpan.first){
@@ -762,9 +791,19 @@ bool PixelBadModules::getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, con
                 lower = -std::numeric_limits<float>::infinity();
             }
         }else{
+            //edm::LogPrint("") << "No overlap, further cluster lower. Spans:";
+            //Stream ss;
+            //clusterSpanInfo(cspanA,ss);ss<<std::endl;clusterSpanInfo(cspanB,ss);ss<<std::endl;
+            //edm::LogPrint("") << ss.str();ss.str(std::string());
+            //edm::LogPrint("") << "**";
             return false;
         }
     }else{       
+        //edm::LogPrint("") << "No overlap, different sides of z axis. Spans:";
+        //Stream ss;
+        //clusterSpanInfo(cspanA,ss);ss<<std::endl;clusterSpanInfo(cspanB,ss);ss<<std::endl;
+        //edm::LogPrint("") << ss.str();ss.str(std::string());
+        //edm::LogPrint("") << "**";
         return false;
     }
     range = std::pair<float,float>(lower,upper);
@@ -819,17 +858,11 @@ void PixelBadModules::compareClusterSpansBarrel(){
         for(auto const & cspanComp : cspans.first){
             if(&cspan == &cspanComp){continue;}
             if(phiRangesOverlap(cspan.phiSpan,cspanComp.phiSpan)){
-                ss<<"*";
-                std::pair<float,float> zRange;
-                if(getZAxisOverlapRangeBarrel(cspan,cspanComp,zRange)){
-                    ss << "range:[" << zRange.first << ", " << zRange.second << "]";
-                }else{
-                    ss << "Could not calc range";
+                std::pair<float,float> range;
+                if(getZAxisOverlapRangeBarrel(cspan,cspanComp,range)){
+
                 }
-                ss << std::endl;
             }
-            clusterSpanInfo(cspanComp,ss);
-            edm::LogPrint("") << ss.str();ss.str(std::string());
         }
     }
     for(auto const & cspan : cspans.second){
@@ -839,17 +872,7 @@ void PixelBadModules::compareClusterSpansBarrel(){
         for(auto const & cspanComp : cspans.second){
             if(&cspan == &cspanComp){continue;}
             if(phiRangesOverlap(cspan.phiSpan,cspanComp.phiSpan)){
-                ss<<"*";
-                std::pair<float,float> zRange;
-                if(getZAxisOverlapRangeEndcap(cspan,cspanComp,zRange)){
-                    ss << "range:[" << zRange.first << ", " << zRange.second << "]";
-                }else{
-                    ss << "Could not calc range";
-                }
-                ss << std::endl;
             }
-            clusterSpanInfo(cspanComp,ss);
-            edm::LogPrint("") << ss.str();ss.str(std::string());
         }
     }
     for(auto const & cspanBar : cspans.first){
@@ -858,19 +881,64 @@ void PixelBadModules::compareClusterSpansBarrel(){
         edm::LogPrint("")<< ss.str();ss.str(std::string());
         for(auto const & cspanEnd : cspans.second){
             if(&cspanBar == &cspanEnd){continue;}
-            if(phiRangesOverlap(cspanBar.phiSpan,cspanEnd.phiSpan)){
-                ss<<"*";
-                std::pair<float,float> zRange;
-                if(getZAxisOverlapRangeBarrelEndcap(cspanBar,cspanEnd,zRange)){
-                    ss << "range:[" << zRange.first << ", " << zRange.second << "]";
-                }else{
-                    ss << "Could not calc range";
-                }
-                ss << std::endl;
-            }
-            clusterSpanInfo(cspanEnd,ss);
-            edm::LogPrint("") << ss.str();ss.str(std::string());
+            if(phiRangesOverlap(cspanBar.phiSpan,cspanEnd.phiSpan));
         }
     }
 }
+PixelBadModules::OverlapSpansContainer PixelBadModules::overlappingSpans(float zAxisThreshold){    
+    OverlapSpansContainer overlapSpansContainer;
+    // find clusterSpans ie phi,r,z limits for detector clusters that are not working
+    // returns pair where first is barrel spans and second endcap spans
+    ClusterSpanContainerPair cspans = clusterSpans();
+
+    // First comparison between barrel clusters
+    for(ClusterSpanContainer::const_iterator barSpanIt = cspans.first.begin(); barSpanIt != cspans.first.end();++barSpanIt){
+        OverlapSpans overlapSpans;
+        for(ClusterSpanContainer::const_iterator compIt = barSpanIt+1;compIt != cspans.first.end();++compIt){
+            if(phiRangesOverlap(barSpanIt->phiSpan,compIt->phiSpan)){
+                std::pair<float,float> range(0,0);
+                if(getZAxisOverlapRangeBarrel(*barSpanIt,*compIt,range)){
+                    if(-zAxisThreshold <= range.second && range.first <= zAxisThreshold){
+                        if(overlapSpans.empty()){
+                            overlapSpans.push_back(*barSpanIt);
+                        }
+                        overlapSpans.push_back(*compIt);
+                    }
+                }
+                
+            }       
+        }
+        if(!overlapSpans.empty()){
+            overlapSpansContainer.push_back(overlapSpans);
+        }
+    }
+
+
+    // Then comparison between endcap  clusters
+    for(ClusterSpanContainer::const_iterator endSpanIt = cspans.second.begin(); endSpanIt != cspans.second.end();++endSpanIt){
+        OverlapSpans overlapSpans;
+        for(ClusterSpanContainer::const_iterator compIt = endSpanIt+1;compIt != cspans.second.end();++compIt){
+            if(phiRangesOverlap(endSpanIt->phiSpan,compIt->phiSpan)){
+                std::pair<float,float> range(0,0);
+                if(getZAxisOverlapRangeEndcap(*endSpanIt,*compIt,range)){
+                    if(-zAxisThreshold <= range.second && range.first <= zAxisThreshold){
+                        if(overlapSpans.empty()){
+                            overlapSpans.push_back(*endSpanIt);
+                        }
+                        overlapSpans.push_back(*compIt);
+                    }
+                }
+                
+            }       
+        }
+        if(!overlapSpans.empty()){
+            overlapSpansContainer.push_back(overlapSpans);
+        }
+    }
+
+
+
+    return overlapSpansContainer;
+}
 DEFINE_FWK_MODULE(PixelBadModules);
+
