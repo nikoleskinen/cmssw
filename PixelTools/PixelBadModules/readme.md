@@ -112,3 +112,8 @@ are in
     * same for detGroups where other is barrel detGroup and other is endcap
 * `void compareDetGroupSpansBarrel()`
 
+## Curvature
+* `bool getCirclesViaTwoPoints(const Point & p1, const Point & p2, const float r, Circle & c1, Circle & c2)`
+    * Function is not included into other code in any way
+    * It calculates two possible circles that go via points p1 and p2 if possible
+    * Centers of these circles must be in line that is perpendicular to line that goes via p1 and p2. Line must also go via midpoint of p1 and p2. Distance from midpoint to center of circle can be calculated using pythagoras

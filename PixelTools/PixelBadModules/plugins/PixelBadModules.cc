@@ -52,6 +52,16 @@ class PixelBadModules : public edm::one::EDAnalyzer<edm::one::SharedResources>  
         using DetGroupSpanContainerPair = std::pair<DetGroupSpanContainer,DetGroupSpanContainer>;
         using OverlapSpans = std::vector<DetGroupSpan>;
         using OverlapSpansContainer = std::vector<OverlapSpans>;
+        // For curvature calculation
+        struct Point{
+            float x;
+            float y;
+            Point():x(0),y(0){}
+        };
+        struct Circle{
+            Point c;
+            float r;
+        };
     private:
         // static data members
         const static unsigned int nLayer1Ladders = 12;
@@ -112,6 +122,8 @@ class PixelBadModules : public edm::one::EDAnalyzer<edm::one::SharedResources>  
         bool getZAxisOverlapRangeBarrelEndcap(const DetGroupSpan & cspanA, const DetGroupSpan & cspanB,std::pair<float,float> & range);
         void compareDetGroupSpansBarrel();
         OverlapSpansContainer overlappingSpans(float zAxisThreshold = std::numeric_limits<float>::infinity());
+        // Curvature calculation
+        static bool getCirclesViaTwoPoints(const Point & p1, const Point & p2, const float r, Circle & c1, Circle & c2);
 };
 //analyzer functions
 PixelBadModules::PixelBadModules(const edm::ParameterSet& iConfig){}
@@ -925,5 +937,28 @@ PixelBadModules::OverlapSpansContainer PixelBadModules::overlappingSpans(float z
     return overlapSpansContainer;
 }
 
+// Curvature calculation
+bool PixelBadModules::getCirclesViaTwoPoints(const Point & p1, const Point & p2, const float r, Circle & c1, Circle & c2){
+    // distance between points
+    float dist = sqrt(pow(p2.x-p1.x,2)+pow(p2.y-p2.y,2));
+    if(dist > 2*r){
+        // if distance is greater that 2*radius of circle
+        return false;
+    }
+    // distance from midpoint of p1 and p2 to center of circle using pythagoras
+    float leg = sqrt( pow(r,2) - pow(dist/2,2) );
+    // midpoint
+    float xMid = (p1.x+p2.x)/2;
+    float yMid = (p1.y+p2.y)/2;
+    // two possible centers for circles, vector (x,y) perpendicular to (y,-x), 1/dist for normaliation
+    c1.c.x = xMid + leg*(1/dist)*(p2.y-p1.y);
+    c1.c.y = yMid + leg*(1/dist)*(p1.x-p2.x);
+    c2.c.x = xMid - leg*(1/dist)*(p2.y-p1.y);
+    c2.c.y = yMid - leg*(1/dist)*(p1.x-p2.x);
+    c1.r = r;
+    c2.r = r;
+    return true;
+    
+}
 DEFINE_FWK_MODULE(PixelBadModules);
 
