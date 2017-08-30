@@ -6,13 +6,13 @@ detectors that are not working.
 
 Procedure for finding these areas are:
 1. Fetch raw IDs of barrel, endcap and bad detector into containers.
-2. Find clusters of bad detectors i.e. partition bad detectors into clusters. 
-In these clusters each detector is adjecent to some other bad detector in same cluster
-3. Abstract away detector data from clusters by finding verges of cluster. 
+2. Find detGroups of bad detectors i.e. partition bad detectors into detGroups. 
+In these detGroups each detector is adjecent to some other bad detector in same detGroup
+3. Abstract away detector data from detGroups by finding verges of detGroup. 
 These verges are represented as phiSpan, rSpan, zSpan in same way that single modules 
 are in 
 [surface class](http://cmsdoxygen.web.cern.ch/cmsdoxygen/CMSSW_9_2_0/doc/html/de/d10/classSurface.html).
-4. Clusters are then compared with each other to find out if there is overlap if we look them from z-axis inside pixel detector.
+4. DetGroups are then compared with each other to find out if there is overlap if we look them from z-axis inside pixel detector.
 
 ## Call graph
 ![Call graph](callGraph/callGraph.png)
@@ -22,13 +22,13 @@ are in
 * `using det_t = uint32_t`
     * detectors type as raw id
 * `using Span_t = std::pair<float,float>`
-    * type of cluster's span equivalent to detectors span (phiSpan,zSpan,rSpan)
+    * type of detGroup's span equivalent to detectors span (phiSpan,zSpan,rSpan)
 * `using DetContainer = std::vector<uint32_t>`
     * vector of detectors' raw ids 
-* `using Cluster = std::vector<uint32_t>`
-    * cluster of detectors are represented as vector of raw det ids
-* `using ClusterContainer = std::vector<Cluster>`
-    * collection of clusters
+* `using DetGroup = std::vector<uint32_t>`
+    * detGroup of detectors are represented as vector of raw det ids
+* `using DetGroupContainer = std::vector<DetGroup>`
+    * collection of detGroups
 * `DetContainer pixelDetsBarrel`
 * `DetContainer pixelDetsEndcap`
 * `DetContainer badPixelDetsBarrel`
@@ -44,44 +44,44 @@ are in
 
 ## Printing functions
 * `void detInfo(const det_t & det, Stream & ss)`
-* `void clusterSpanInfo(const ClusterSpan & cspan, Stream & ss)`
+* `void detGroupSpanInfo(const DetGroupSpan & cspan, Stream & ss)`
 * `void printPixelDets()`
 * `void printBadPixelDets()`
-* `void printBadClusters()`
-* `void printBadClusterSpans()`
+* `void printBadDetGroups()`
+* `void printBadDetGroupSpans()`
 
-## Functions for finding bad clusters
+## Functions for finding bad detGroups
 * `static bool phiRangesOverlap(const float x1,const float x2, const float y1,const float y2)`
 * `static bool phiRangesOverlap(const Span_t&phiSpanA, const Span_t&phiSpanB)`
     * Check if given spans `phiSpanA` and `phiSpanB` overlaps. It is assumed that `phiSpan.first` is more clockwise than `phiSpan.second`
 * `bool detWorks(det_t det)`
     * check if det whether works or not
-* `Cluster badAdjecentDetsBarrel(const det_t & det)`
+* `DetGroup badAdjecentDetsBarrel(const det_t & det)`
     * returns list of adjecent barrel detectors that are not working ie next and previous in same module or next or previous in different ladders with same module number
-* `Cluster badAdjecentDetsEndcap(const det_t & det)`
+* `DetGroup badAdjecentDetsEndcap(const det_t & det)`
     * returns list of bad endcap detectors that overlap in phi dimension with `det` detector and are in the same disk
-* `Cluster reachableCluster(const det_t & initDet, DetectorSet & foundDets)`
+* `DetGroup reachableDetGroup(const det_t & initDet, DetectorSet & foundDets)`
     * returns list of detectors that are reachable from `det` detector using `badAdjecentDets*()` function. This is basically implemented as breadth-first search for a graph where detectors are vertices and there is edge between two detectors `detA` and `detB` if `detA` is in `badAdjecentDets*(detB)` 
-* `ClusterContainer badClustersBarrel()`
-    * return list of barrel clusters (bad detectors that are adjecent to each other)
-* `ClusterContainer badClustersEndcap()`
+* `DetGroupContainer badDetGroupsBarrel()`
+    * return list of barrel detGroups (bad detectors that are adjecent to each other)
+* `DetGroupContainer badDetGroupsEndcap()`
     * same for endcap detectors
 
-## Functions for finding ranges that clusters cover
+## Functions for finding ranges that detGroups cover
 * `static bool phiMoreClockwise(float phiA, float phiB)`
     * return true if `phiA` is more clockwise than `phiB` while considering only that half circle that angles are located
 * `static bool phiMoreCounterclockwise(float phiA, float phiB)`
     * same for other direction
-* `void getPhiSpanBarrel(const Cluster & cluster, ClusterSpan & cspan)`
-    * gets limits of barrel cluster in phi dimension using ladder numbers
+* `void getPhiSpanBarrel(const DetGroup & detGroup, DetGroupSpan & cspan)`
+    * gets limits of barrel detGroup in phi dimension using ladder numbers
         1. First creates unique list of ladder numbers
         2. Infer first and last ladder in phi dimension using modulus arithmetics
         3. Get corresponding phi values for first and last ladder
-* `void getPhiSpanEndcap(const Cluster & cluster, ClusterSpan & cspan)`
-    * this is does same for endcap cluster than previous function did for barrels.
+* `void getPhiSpanEndcap(const DetGroup & detGroup, DetGroupSpan & cspan)`
+    * this is does same for endcap detGroup than previous function did for barrels.
     Implementation is much more naive/bruteforce than previous and would propably be faster when implemented in same way than barrel counterpart.
     * Function:
-        1. gets one work detector from clusters and starts comparing it to other detectors.
+        1. gets one work detector from detGroups and starts comparing it to other detectors.
         2. if function counters other detector that overlaps with work detector in phi dimension 
         and is more clockwise direction, function uses this detector as work detector 
         and starts comparing it to the other detectors 
@@ -89,26 +89,26 @@ are in
         found
         4. Same is done for counter clockwise direction for the ending detector
 
-* `void getZSpan(const Cluster & cluster, ClusterSpan & cspan)`
-    * gets smallest and greatest z values in cluster
-* `void getRSpan(const Cluster & cluster, ClusterSpan & cspan)`
-    * gets smallest and greatest r values in cluster
-* `void getSpan(const Cluster & cluster, ClusterSpan & cspan)`
+* `void getZSpan(const DetGroup & detGroup, DetGroupSpan & cspan)`
+    * gets smallest and greatest z values in detGroup
+* `void getRSpan(const DetGroup & detGroup, DetGroupSpan & cspan)`
+    * gets smallest and greatest r values in detGroup
+* `void getSpan(const DetGroup & detGroup, DetGroupSpan & cspan)`
     * wrapper for phi, r and z getSpan functions
-* `ClusterSpanContainerPair clusterSpans()`
-    * returns container pair of cluster spans. First value is containes barrel cluster spans and
+* `DetGroupSpanContainerPair detGroupSpans()`
+    * returns container pair of detGroup spans. First value is containes barrel detGroup spans and
     and second endcap spans
 
-## Functions for findind overlapping clusters
+## Functions for findind overlapping detGroups
 * `static float zAxisIntersection(const float zrPointA[2], const float zrPoint[2])`
     * returns z-axis value where line that goes via two points intersects z axis.
     Points and line are in z-x (z-r) plane
-* `bool getZAxisOverlapRangeBarrel(const ClusterSpan & cspanA, const ClusterSpan & cspanB,std::pair<float,float> & range)`
-    * returns true if there is some range in z axis where clusters A and B overlaps.
+* `bool getZAxisOverlapRangeBarrel(const DetGroupSpan & cspanA, const DetGroupSpan & cspanB,std::pair<float,float> & range)`
+    * returns true if there is some range in z axis where detGroups A and B overlaps.
     Function also retrun this range via `range` reference parameter
-* `bool getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, const ClusterSpan & cspanB,std::pair<float,float> & range)`
-    * same for endcap clusters, but with assumption that we are only interested in ranges that are inside pixel detector
-* `bool getZAxisOverlapRangeBarrelEndcap(const ClusterSpan & cspanA, const ClusterSpan & cspanB,std::pair<float,float> & range)`
-    * same for clusters where other is barrel cluster and other is endcap
-* `void compareClusterSpansBarrel()`
+* `bool getZAxisOverlapRangeEndcap(const DetGroupSpan & cspanA, const DetGroupSpan & cspanB,std::pair<float,float> & range)`
+    * same for endcap detGroups, but with assumption that we are only interested in ranges that are inside pixel detector
+* `bool getZAxisOverlapRangeBarrelEndcap(const DetGroupSpan & cspanA, const DetGroupSpan & cspanB,std::pair<float,float> & range)`
+    * same for detGroups where other is barrel detGroup and other is endcap
+* `void compareDetGroupSpansBarrel()`
 
