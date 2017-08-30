@@ -32,14 +32,14 @@ class PixelBadModules : public edm::one::EDAnalyzer<edm::one::SharedResources>  
         virtual void endJob() override;
         ~PixelBadModules();
         // Output types
-        struct ClusterSpan {
+        struct DetGroupSpan {
             int subdetId;
             std::pair<float,float> phiSpan;
             std::pair<float,float> zSpan;
             std::pair<float,float> rSpan;
             unsigned int layer;
             unsigned int disk;
-            ClusterSpan():
+            DetGroupSpan():
                 subdetId(0),
                 phiSpan(0,0),
                 zSpan(0,0),
@@ -48,9 +48,9 @@ class PixelBadModules : public edm::one::EDAnalyzer<edm::one::SharedResources>  
             {}
         };
         // Output type aliases
-        using ClusterSpanContainer = std::vector<ClusterSpan>;
-        using ClusterSpanContainerPair = std::pair<ClusterSpanContainer,ClusterSpanContainer>;
-        using OverlapSpans = std::vector<ClusterSpan>;
+        using DetGroupSpanContainer = std::vector<DetGroupSpan>;
+        using DetGroupSpanContainerPair = std::pair<DetGroupSpanContainer,DetGroupSpanContainer>;
+        using OverlapSpans = std::vector<DetGroupSpan>;
         using OverlapSpansContainer = std::vector<OverlapSpans>;
     private:
         // static data members
@@ -63,8 +63,8 @@ class PixelBadModules : public edm::one::EDAnalyzer<edm::one::SharedResources>  
         using det_t = uint32_t;
         using Span_t = std::pair<float,float>;
         using DetContainer = std::vector<uint32_t>;
-        using Cluster = std::vector<uint32_t>;
-        using ClusterContainer = std::vector<Cluster>;
+        using DetGroup = std::vector<uint32_t>;
+        using DetGroupContainer = std::vector<DetGroup>;
         using DetectorSet = std::set<uint32_t>;
         using Stream = std::stringstream;
         // data handles and containers
@@ -81,36 +81,36 @@ class PixelBadModules : public edm::one::EDAnalyzer<edm::one::SharedResources>  
         void getBadPixelDets();
         // Printing functions
         void detInfo(const det_t & det, Stream & ss);
-        void clusterSpanInfo(const ClusterSpan & cspan, Stream & ss);
+        void detGroupSpanInfo(const DetGroupSpan & cspan, Stream & ss);
         void printPixelDets();
         void printBadPixelDets();
-        void printBadClusters();
-        void printBadClusterSpans();
+        void printBadDetGroups();
+        void printBadDetGroupSpans();
         void printOverlapSpans();
-        // Functions for finding bad clusters
+        // Functions for finding bad detGroups
         static bool phiRangesOverlap(const float x1,const float x2, const float y1,const float y2);
         static bool phiRangesOverlap(const Span_t&phiSpanA, const Span_t&phiSpanB);
         bool detWorks(det_t det);
-        Cluster badAdjecentDetsBarrel(const det_t & det);
-        Cluster badAdjecentDetsEndcap(const det_t & det);
-        Cluster reachableCluster(const det_t & initDet, DetectorSet & foundDets);
-        ClusterContainer badClustersBarrel();
-        ClusterContainer badClustersEndcap();
-        // Functions for finding ranges that clusters cover
+        DetGroup badAdjecentDetsBarrel(const det_t & det);
+        DetGroup badAdjecentDetsEndcap(const det_t & det);
+        DetGroup reachableDetGroup(const det_t & initDet, DetectorSet & foundDets);
+        DetGroupContainer badDetGroupsBarrel();
+        DetGroupContainer badDetGroupsEndcap();
+        // Functions for finding ranges that detGroups cover
         static bool phiMoreClockwise(float phiA, float phiB);
         static bool phiMoreCounterclockwise(float phiA, float phiB);
-        void getPhiSpanBarrel(const Cluster & cluster, ClusterSpan & cspan);
-        void getPhiSpanEndcap(const Cluster & cluster, ClusterSpan & cspan);
-        void getZSpan(const Cluster & cluster, ClusterSpan & cspan);
-        void getRSpan(const Cluster & cluster, ClusterSpan & cspan);
-        void getSpan(const Cluster & cluster, ClusterSpan & cspan);
-        ClusterSpanContainerPair clusterSpans();
+        void getPhiSpanBarrel(const DetGroup & detGroup, DetGroupSpan & cspan);
+        void getPhiSpanEndcap(const DetGroup & detGroup, DetGroupSpan & cspan);
+        void getZSpan(const DetGroup & detGroup, DetGroupSpan & cspan);
+        void getRSpan(const DetGroup & detGroup, DetGroupSpan & cspan);
+        void getSpan(const DetGroup & detGroup, DetGroupSpan & cspan);
+        DetGroupSpanContainerPair detGroupSpans();
         // Functions for findind overlapping functions
         static float zAxisIntersection(const float zrPointA[2], const float zrPoint[2]);
-        bool getZAxisOverlapRangeBarrel(const ClusterSpan & cspanA, const ClusterSpan & cspanB,std::pair<float,float> & range);
-        bool getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, const ClusterSpan & cspanB,std::pair<float,float> & range);
-        bool getZAxisOverlapRangeBarrelEndcap(const ClusterSpan & cspanA, const ClusterSpan & cspanB,std::pair<float,float> & range);
-        void compareClusterSpansBarrel();
+        bool getZAxisOverlapRangeBarrel(const DetGroupSpan & cspanA, const DetGroupSpan & cspanB,std::pair<float,float> & range);
+        bool getZAxisOverlapRangeEndcap(const DetGroupSpan & cspanA, const DetGroupSpan & cspanB,std::pair<float,float> & range);
+        bool getZAxisOverlapRangeBarrelEndcap(const DetGroupSpan & cspanA, const DetGroupSpan & cspanB,std::pair<float,float> & range);
+        void compareDetGroupSpansBarrel();
         OverlapSpansContainer overlappingSpans(float zAxisThreshold = std::numeric_limits<float>::infinity());
 };
 //analyzer functions
@@ -213,7 +213,7 @@ void PixelBadModules::detInfo(const det_t & det, Stream & ss){
         << "r:["   << right << setw(10) << rA   << "," << left << setw(10) << rB   << "]" << deli;
 
 }
-void PixelBadModules::clusterSpanInfo(const ClusterSpan & cspan, Stream & ss){
+void PixelBadModules::detGroupSpanInfo(const DetGroupSpan & cspan, Stream & ss){
     using std::showpos;
     using std::noshowpos;
     using std::fixed;
@@ -258,46 +258,46 @@ void PixelBadModules::printBadPixelDets(){
         edm::LogPrint("") << ss.str();ss.str(std::string());
     }
 }
-void PixelBadModules::printBadClusters(){
-    ClusterContainer badClustersBar = badClustersBarrel();
-    ClusterContainer badClustersEnd = badClustersEndcap();
+void PixelBadModules::printBadDetGroups(){
+    DetGroupContainer badDetGroupsBar = badDetGroupsBarrel();
+    DetGroupContainer badDetGroupsEnd = badDetGroupsEndcap();
     Stream ss;
-    for(auto const & cluster : badClustersBar){
-        ss << std::setfill(' ') << std::left << std::setw(16) << "Cluster:";
-        ClusterSpan cspan;
-        getPhiSpanBarrel(cluster,cspan);
-        getZSpan(cluster,cspan);
-        getRSpan(cluster,cspan);
-        clusterSpanInfo(cspan,ss);
+    for(auto const & detGroup : badDetGroupsBar){
+        ss << std::setfill(' ') << std::left << std::setw(16) << "DetGroup:";
+        DetGroupSpan cspan;
+        getPhiSpanBarrel(detGroup,cspan);
+        getZSpan(detGroup,cspan);
+        getRSpan(detGroup,cspan);
+        detGroupSpanInfo(cspan,ss);
         ss<<std::endl;
-        for(auto const & det : cluster){
+        for(auto const & det : detGroup){
             detInfo(det,ss);ss<<std::endl;
         }
         ss<<std::endl;
     }
-    for(auto const & cluster : badClustersEnd){
-        ss << std::setfill(' ') << std::left << std::setw(16) << "Cluster:";
-        ClusterSpan cspan;
-        getPhiSpanEndcap(cluster,cspan);
-        getZSpan(cluster,cspan);
-        getRSpan(cluster,cspan);
-        clusterSpanInfo(cspan,ss);
+    for(auto const & detGroup : badDetGroupsEnd){
+        ss << std::setfill(' ') << std::left << std::setw(16) << "DetGroup:";
+        DetGroupSpan cspan;
+        getPhiSpanEndcap(detGroup,cspan);
+        getZSpan(detGroup,cspan);
+        getRSpan(detGroup,cspan);
+        detGroupSpanInfo(cspan,ss);
         ss << std::endl;
-        for(auto const & det : cluster){
+        for(auto const & det : detGroup){
             detInfo(det,ss);ss<<std::endl;
         }
         ss << std::endl;
     }
     edm::LogPrint("")<<ss.str();
 }
-void PixelBadModules::printBadClusterSpans(){
-    ClusterSpanContainerPair cspans = clusterSpans();
+void PixelBadModules::printBadDetGroupSpans(){
+    DetGroupSpanContainerPair cspans = detGroupSpans();
     Stream ss;
     for(auto const & cspan : cspans.first){
-        clusterSpanInfo(cspan,ss);ss<<std::endl;
+        detGroupSpanInfo(cspan,ss);ss<<std::endl;
     }
     for(auto const & cspan : cspans.second){
-        clusterSpanInfo(cspan,ss);ss<<std::endl;
+        detGroupSpanInfo(cspan,ss);ss<<std::endl;
     }
     edm::LogPrint("") << ss.str();
 }
@@ -305,15 +305,15 @@ void PixelBadModules::printOverlapSpans(){
     OverlapSpansContainer ospans = this->overlappingSpans();
     Stream ss;
     for(auto const & spans : ospans){
-        ss << "Overlapping clusters:\n";
+        ss << "Overlapping detGroups:\n";
         for(auto const cspan : spans){
-            clusterSpanInfo(cspan,ss);
+            detGroupSpanInfo(cspan,ss);
             ss << std::endl;
         }
     }
     edm::LogPrint("") << ss.str();
 }
-// Functions for finding bad clusters
+// Functions for finding bad detGroups
 bool PixelBadModules::phiRangesOverlap(const float x1,const float x2, const float y1,const float y2){
 
     // assuming phi ranges are [x1,x2] and [y1,y2] and xi,yi in [-pi,pi]
@@ -351,12 +351,12 @@ bool PixelBadModules::detWorks(det_t det){
         == badPixelDetsEndcap.end()
         ;
 }
-PixelBadModules::Cluster PixelBadModules::badAdjecentDetsBarrel(const det_t & det){
+PixelBadModules::DetGroup PixelBadModules::badAdjecentDetsBarrel(const det_t & det){
     using std::remove_if;
     using std::bind1st;
     using std::mem_fun;
 
-    Cluster adj;
+    DetGroup adj;
     auto const & tTopo = trackerTopology;
     auto const & detId = DetId(det);
     unsigned int layer  = tTopo->pxbLayer (detId);
@@ -391,11 +391,11 @@ PixelBadModules::Cluster PixelBadModules::badAdjecentDetsBarrel(const det_t & de
                     mem_fun(&PixelBadModules::detWorks),this)),adj.end());
     return adj;
 }
-PixelBadModules::Cluster PixelBadModules::badAdjecentDetsEndcap(const det_t & det){
+PixelBadModules::DetGroup PixelBadModules::badAdjecentDetsEndcap(const det_t & det){
     // this might be faster if adjecent 
     using std::tie;
     using std::ignore;
-    Cluster adj;
+    DetGroup adj;
     Span_t  phiSpan, phiSpanComp;
     float z, zComp;
     unsigned int disk, diskComp;
@@ -417,14 +417,14 @@ PixelBadModules::Cluster PixelBadModules::badAdjecentDetsEndcap(const det_t & de
     }
     return adj;
 }
-PixelBadModules::Cluster PixelBadModules::reachableCluster(const det_t & initDet, DetectorSet & foundDets){
-    Cluster reachableCluster;
+PixelBadModules::DetGroup PixelBadModules::reachableDetGroup(const det_t & initDet, DetectorSet & foundDets){
+    DetGroup reachableDetGroup;
     std::queue<det_t> workQueue;
     det_t workDet;
-    Cluster badAdjDets;
+    DetGroup badAdjDets;
     foundDets.insert(initDet);
     workQueue.push(initDet);
-    reachableCluster.push_back(initDet);
+    reachableDetGroup.push_back(initDet);
     while(!workQueue.empty()){
         workDet = workQueue.front();workQueue.pop();
         if(DetId(workDet).subdetId() == PixelSubdetector::PixelBarrel){
@@ -436,35 +436,35 @@ PixelBadModules::Cluster PixelBadModules::reachableCluster(const det_t & initDet
         }
         for(auto const & badDet : badAdjDets){
             if(foundDets.find(badDet) == foundDets.end()){
-                reachableCluster.push_back(badDet);
+                reachableDetGroup.push_back(badDet);
                 foundDets.insert(badDet);
                 workQueue.push(badDet);
             }
         }
     }
-    return reachableCluster;
+    return reachableDetGroup;
 }
-PixelBadModules::ClusterContainer PixelBadModules::badClustersBarrel(){
-    ClusterContainer clusters;
+PixelBadModules::DetGroupContainer PixelBadModules::badDetGroupsBarrel(){
+    DetGroupContainer detGroups;
     DetectorSet foundDets;
     for(auto const & badDet : badPixelDetsBarrel){
         if(foundDets.find(badDet) == foundDets.end()){
-            clusters.push_back(this->reachableCluster(badDet,foundDets));
+            detGroups.push_back(this->reachableDetGroup(badDet,foundDets));
         } 
     }
-    return clusters;
+    return detGroups;
 }
-PixelBadModules::ClusterContainer PixelBadModules::badClustersEndcap(){
-    ClusterContainer clusters;
+PixelBadModules::DetGroupContainer PixelBadModules::badDetGroupsEndcap(){
+    DetGroupContainer detGroups;
     DetectorSet foundDets;
     for(auto const & badDet : badPixelDetsEndcap){
         if(foundDets.find(badDet) == foundDets.end()){
-            clusters.push_back(this->reachableCluster(badDet,foundDets));
+            detGroups.push_back(this->reachableDetGroup(badDet,foundDets));
         } 
     }
-    return clusters;
+    return detGroups;
 }
-// Functions for finding ClusterSpans
+// Functions for finding DetGroupSpans
 bool PixelBadModules::phiMoreClockwise(float phiA, float phiB){
     // return true if a is more clockwise than b
     // assuming both angels are in same half
@@ -505,20 +505,20 @@ bool PixelBadModules::phiMoreCounterclockwise(float phiA, float phiB){
         return false;
     }
 }
-void PixelBadModules::getPhiSpanBarrel(const Cluster & cluster, ClusterSpan & cspan){
-    // find phiSpan using ordered vector of unique ladders in cluster
-    if(cluster.size() == 0){
-        cspan = ClusterSpan();
+void PixelBadModules::getPhiSpanBarrel(const DetGroup & detGroup, DetGroupSpan & cspan){
+    // find phiSpan using ordered vector of unique ladders in detGroup
+    if(detGroup.size() == 0){
+        cspan = DetGroupSpan();
         return;
     } else{
-        cspan.layer = trackerTopology->pxbLayer(DetId(cluster[0]));
+        cspan.layer = trackerTopology->pxbLayer(DetId(detGroup[0]));
         cspan.disk = 0;
     }
     using uint = unsigned int;
     using LadderSet = std::set<uint>;
     using LadVec = std::vector<uint>;
     LadderSet lads;
-    for(auto const & det : cluster){
+    for(auto const & det : detGroup){
         lads.insert(trackerTopology->pxbLadder(DetId(det)));
     }
     LadVec ladv(lads.begin(),lads.end());
@@ -530,7 +530,7 @@ void PixelBadModules::getPhiSpanBarrel(const Cluster & cluster, ClusterSpan & cs
         case 4: nLadders = nLayer4Ladders;break;
         default: nLadders = 0;
     }
-    // find start ladder of cluster
+    // find start ladder of detGroup
     uint i = 0;
     uint currentLadder = ladv[0];
     uint previousLadder = ladv[ (ladv.size()+i-1) % ladv.size() ];
@@ -552,9 +552,9 @@ void PixelBadModules::getPhiSpanBarrel(const Cluster & cluster, ClusterSpan & cs
     cspan.phiSpan.first  = trackerGeometry->idToDet(detStart)->surface().phiSpan().first;
     cspan.phiSpan.second = trackerGeometry->idToDet(detEnd)->surface().phiSpan().second;
 }
-void PixelBadModules::getPhiSpanEndcap(const Cluster & cluster, ClusterSpan & cspan){
+void PixelBadModules::getPhiSpanEndcap(const DetGroup & detGroup, DetGroupSpan & cspan){
     // this is quite naive/bruteforce method
-    // 1) it starts by taking one detector from cluster and starts to compare it to others
+    // 1) it starts by taking one detector from detGroup and starts to compare it to others
     // 2) when it finds overlapping detector in clockwise direction it starts comparing 
     //    found detector to others
     // 3) search stops until no overlapping detectors in clockwise detector or all detectors
@@ -562,25 +562,25 @@ void PixelBadModules::getPhiSpanEndcap(const Cluster & cluster, ClusterSpan & cs
     Stream ss;
     bool found = false;
     auto const & tGeom = trackerGeometry;
-    Cluster::const_iterator startDetIter = cluster.begin();
+    DetGroup::const_iterator startDetIter = detGroup.begin();
     Span_t phiSpan,phiSpanComp;
     unsigned int counter = 0;
     while(!found){
         phiSpan = tGeom->idToDet(DetId(*startDetIter))->surface().phiSpan();
-        for(Cluster::const_iterator compDetIter=cluster.begin();compDetIter!=cluster.end();++compDetIter){
+        for(DetGroup::const_iterator compDetIter=detGroup.begin();compDetIter!=detGroup.end();++compDetIter){
             phiSpanComp = tGeom->idToDet(DetId(*compDetIter))->surface().phiSpan();
             if(phiRangesOverlap(phiSpan,phiSpanComp)
                     && phiMoreClockwise(phiSpanComp.first,phiSpan.first)
                     && startDetIter != compDetIter)
             {
                 ++counter;
-                if(counter > cluster.size()){
+                if(counter > detGroup.size()){
                     cspan.phiSpan.first  =  std::numeric_limits<float>::epsilon();
                     cspan.phiSpan.second = -std::numeric_limits<float>::epsilon();
                     return;
                 }
                 startDetIter = compDetIter;break;
-            } else if (compDetIter == cluster.end()-1){
+            } else if (compDetIter == detGroup.end()-1){
                 found = true;
             }
         }
@@ -588,31 +588,31 @@ void PixelBadModules::getPhiSpanEndcap(const Cluster & cluster, ClusterSpan & cs
     cspan.phiSpan.first = phiSpan.first;
     // second with same method}
     found = false;
-    Cluster::const_iterator endDetIter = cluster.begin();
+    DetGroup::const_iterator endDetIter = detGroup.begin();
     counter = 0;
     while(!found){
         phiSpan = tGeom->idToDet(DetId(*endDetIter))->surface().phiSpan();
-        for(Cluster::const_iterator compDetIter=cluster.begin();compDetIter!=cluster.end();++compDetIter){
+        for(DetGroup::const_iterator compDetIter=detGroup.begin();compDetIter!=detGroup.end();++compDetIter){
             phiSpanComp = tGeom->idToDet(DetId(*compDetIter))->surface().phiSpan();
             if(phiRangesOverlap(phiSpan,phiSpanComp)
                     && phiMoreCounterclockwise(phiSpanComp.second,phiSpan.second)
                     && endDetIter != compDetIter)
             {
                 ++counter;
-                if(counter > cluster.size()){
+                if(counter > detGroup.size()){
                     cspan.phiSpan.first  =  std::numeric_limits<float>::epsilon();
                     cspan.phiSpan.second = -std::numeric_limits<float>::epsilon();
                     return;
                 }
                 endDetIter = compDetIter;break;
-            } else if (compDetIter == cluster.end()-1){
+            } else if (compDetIter == detGroup.end()-1){
                 found = true;
             }
         }
     }
     cspan.phiSpan.second = phiSpan.second;
 }
-void PixelBadModules::getZSpan(const Cluster & cluster, ClusterSpan & cspan){
+void PixelBadModules::getZSpan(const DetGroup & detGroup, DetGroupSpan & cspan){
     auto cmpFun = [this] (det_t detA, det_t detB){
         return
             trackerGeometry->idToDet(DetId(detA))->surface().zSpan().first
@@ -621,11 +621,11 @@ void PixelBadModules::getZSpan(const Cluster & cluster, ClusterSpan & cspan){
             ;
     };
     
-    auto minmaxIters = std::minmax_element(cluster.begin(),cluster.end(),cmpFun);
+    auto minmaxIters = std::minmax_element(detGroup.begin(),detGroup.end(),cmpFun);
     cspan.zSpan.first = trackerGeometry->idToDet(DetId(*(minmaxIters.first)))->surface().zSpan().first;
     cspan.zSpan.second = trackerGeometry->idToDet(DetId(*(minmaxIters.second)))->surface().zSpan().second;
 }
-void PixelBadModules::getRSpan(const Cluster & cluster, ClusterSpan & cspan){
+void PixelBadModules::getRSpan(const DetGroup & detGroup, DetGroupSpan & cspan){
     auto cmpFun = [this] (det_t detA, det_t detB){
         return
             trackerGeometry->idToDet(DetId(detA))->surface().rSpan().first
@@ -634,51 +634,51 @@ void PixelBadModules::getRSpan(const Cluster & cluster, ClusterSpan & cspan){
             ;
     };
     
-    auto minmaxIters = std::minmax_element(cluster.begin(),cluster.end(),cmpFun);
+    auto minmaxIters = std::minmax_element(detGroup.begin(),detGroup.end(),cmpFun);
     cspan.rSpan.first = trackerGeometry->idToDet(DetId(*(minmaxIters.first)))->surface().rSpan().first;
     cspan.rSpan.second = trackerGeometry->idToDet(DetId(*(minmaxIters.second)))->surface().rSpan().second;
 }
-void PixelBadModules::getSpan(const Cluster & cluster, ClusterSpan & cspan){
-    auto firstDetIt = cluster.begin();
-    if(firstDetIt != cluster.end()){
+void PixelBadModules::getSpan(const DetGroup & detGroup, DetGroupSpan & cspan){
+    auto firstDetIt = detGroup.begin();
+    if(firstDetIt != detGroup.end()){
         cspan.subdetId = DetId(*firstDetIt).subdetId();
         if(cspan.subdetId == 1){
             cspan.layer = trackerTopology->pxbLayer(DetId(*firstDetIt));
             cspan.disk = 0;
-            getPhiSpanBarrel(cluster,cspan);    
+            getPhiSpanBarrel(detGroup,cspan);    
         }else if(cspan.subdetId == 2){
             cspan.disk = trackerTopology->pxfDisk(DetId(*firstDetIt));
             cspan.layer = 0;
-            getPhiSpanEndcap(cluster,cspan);
+            getPhiSpanEndcap(detGroup,cspan);
         }
-        getZSpan(cluster,cspan);
-        getRSpan(cluster,cspan);
+        getZSpan(detGroup,cspan);
+        getRSpan(detGroup,cspan);
     }
 }
-PixelBadModules::ClusterSpanContainerPair PixelBadModules::clusterSpans(){
-    ClusterSpanContainer cspansBarrel;
-    ClusterSpanContainer cspansEndcap;
-    ClusterContainer badClustersBar = badClustersBarrel();
-    ClusterContainer badClustersEnd = badClustersEndcap();
-    for(auto const & cluster : badClustersBar){
-        ClusterSpan cspan;
-        getSpan(cluster,cspan);
+PixelBadModules::DetGroupSpanContainerPair PixelBadModules::detGroupSpans(){
+    DetGroupSpanContainer cspansBarrel;
+    DetGroupSpanContainer cspansEndcap;
+    DetGroupContainer badDetGroupsBar = badDetGroupsBarrel();
+    DetGroupContainer badDetGroupsEnd = badDetGroupsEndcap();
+    for(auto const & detGroup : badDetGroupsBar){
+        DetGroupSpan cspan;
+        getSpan(detGroup,cspan);
         cspansBarrel.push_back(cspan);
     }
-    for(auto const & cluster : badClustersEnd){
-        ClusterSpan cspan;
-        getSpan(cluster,cspan);
+    for(auto const & detGroup : badDetGroupsEnd){
+        DetGroupSpan cspan;
+        getSpan(detGroup,cspan);
         cspansEndcap.push_back(cspan);
     }
-    return ClusterSpanContainerPair(cspansBarrel,cspansEndcap);
+    return DetGroupSpanContainerPair(cspansBarrel,cspansEndcap);
 }
 // Functions for findind overlapping functions
 float PixelBadModules::zAxisIntersection(const float zrPointA[2], const float zrPointB[2]){
     return (zrPointB[0]-zrPointA[0])/(zrPointB[1]-zrPointA[1])*(-zrPointA[1])+zrPointA[0];
 }
-bool PixelBadModules::getZAxisOverlapRangeBarrel(const ClusterSpan & cspanA, const ClusterSpan & cspanB, std::pair<float,float> & range){
-    ClusterSpan cspanUpper;
-    ClusterSpan cspanLower;
+bool PixelBadModules::getZAxisOverlapRangeBarrel(const DetGroupSpan & cspanA, const DetGroupSpan & cspanB, std::pair<float,float> & range){
+    DetGroupSpan cspanUpper;
+    DetGroupSpan cspanLower;
     if(cspanA.rSpan.second < cspanB.rSpan.first){
         cspanLower = cspanA;
         cspanUpper = cspanB;
@@ -692,31 +692,31 @@ bool PixelBadModules::getZAxisOverlapRangeBarrel(const ClusterSpan & cspanA, con
     float upper = 0;
     if(cspanUpper.zSpan.second < cspanLower.zSpan.first){
         // lower intersectionpoint, point = {z,r} in cylindrical coordinates
-        const float pointUpperClusterL[2] = {cspanUpper.zSpan.second, cspanUpper.rSpan.second};
-        const float pointLowerClusterL[2] = {cspanLower.zSpan.first,  cspanLower.rSpan.first};
-        lower = zAxisIntersection(pointUpperClusterL,pointLowerClusterL);
+        const float pointUpperDetGroupL[2] = {cspanUpper.zSpan.second, cspanUpper.rSpan.second};
+        const float pointLowerDetGroupL[2] = {cspanLower.zSpan.first,  cspanLower.rSpan.first};
+        lower = zAxisIntersection(pointUpperDetGroupL,pointLowerDetGroupL);
         // upper intersectionpoint
-        const float pointUpperClusterU[2] = {cspanUpper.zSpan.first, cspanUpper.rSpan.first};
-        const float pointLowerClusterU[2] = {cspanLower.zSpan.second,  cspanLower.rSpan.second};
-        upper = zAxisIntersection(pointUpperClusterU,pointLowerClusterU);
+        const float pointUpperDetGroupU[2] = {cspanUpper.zSpan.first, cspanUpper.rSpan.first};
+        const float pointLowerDetGroupU[2] = {cspanLower.zSpan.second,  cspanLower.rSpan.second};
+        upper = zAxisIntersection(pointUpperDetGroupU,pointLowerDetGroupU);
     }else if (cspanUpper.zSpan.first <= cspanLower.zSpan.second && cspanLower.zSpan.first <= cspanUpper.zSpan.second){
         // lower intersectionpoint, point = {z,r} in cylindrical coordinates
-        const float pointUpperClusterL[2] = {cspanUpper.zSpan.second, cspanUpper.rSpan.first};
-        const float pointLowerClusterL[2] = {cspanLower.zSpan.first,  cspanLower.rSpan.second};
-        lower = zAxisIntersection(pointUpperClusterL,pointLowerClusterL);
+        const float pointUpperDetGroupL[2] = {cspanUpper.zSpan.second, cspanUpper.rSpan.first};
+        const float pointLowerDetGroupL[2] = {cspanLower.zSpan.first,  cspanLower.rSpan.second};
+        lower = zAxisIntersection(pointUpperDetGroupL,pointLowerDetGroupL);
         // upper intersectionpoint
-        const float pointUpperClusterU[2] = {cspanUpper.zSpan.first, cspanUpper.rSpan.first};
-        const float pointLowerClusterU[2] = {cspanLower.zSpan.second,  cspanLower.rSpan.second};
-        upper = zAxisIntersection(pointUpperClusterU,pointLowerClusterU);
+        const float pointUpperDetGroupU[2] = {cspanUpper.zSpan.first, cspanUpper.rSpan.first};
+        const float pointLowerDetGroupU[2] = {cspanLower.zSpan.second,  cspanLower.rSpan.second};
+        upper = zAxisIntersection(pointUpperDetGroupU,pointLowerDetGroupU);
     }else if (cspanUpper.zSpan.first > cspanLower.zSpan.second){
         // lower intersectionpoint, point = {z,r} in cylindrical coordinates
-        const float pointUpperClusterL[2] = {cspanUpper.zSpan.second, cspanUpper.rSpan.first};
-        const float pointLowerClusterL[2] = {cspanLower.zSpan.first,  cspanLower.rSpan.second};
-        lower = zAxisIntersection(pointUpperClusterL,pointLowerClusterL);
+        const float pointUpperDetGroupL[2] = {cspanUpper.zSpan.second, cspanUpper.rSpan.first};
+        const float pointLowerDetGroupL[2] = {cspanLower.zSpan.first,  cspanLower.rSpan.second};
+        lower = zAxisIntersection(pointUpperDetGroupL,pointLowerDetGroupL);
         // upper intersectionpoint
-        const float pointUpperClusterU[2] = {cspanUpper.zSpan.first, cspanUpper.rSpan.second};
-        const float pointLowerClusterU[2] = {cspanLower.zSpan.second,  cspanLower.rSpan.first};
-        upper = zAxisIntersection(pointUpperClusterU,pointLowerClusterU);
+        const float pointUpperDetGroupU[2] = {cspanUpper.zSpan.first, cspanUpper.rSpan.second};
+        const float pointLowerDetGroupU[2] = {cspanLower.zSpan.second,  cspanLower.rSpan.first};
+        upper = zAxisIntersection(pointUpperDetGroupU,pointLowerDetGroupU);
     }else{
         //something wrong
         return false;
@@ -724,10 +724,10 @@ bool PixelBadModules::getZAxisOverlapRangeBarrel(const ClusterSpan & cspanA, con
     range = std::pair<float,float>(lower,upper);
     return true;
 }
-bool PixelBadModules::getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, const ClusterSpan & cspanB, std::pair<float,float> & range){
+bool PixelBadModules::getZAxisOverlapRangeEndcap(const DetGroupSpan & cspanA, const DetGroupSpan & cspanB, std::pair<float,float> & range){
     // While on left hand side of pixel detector
-    ClusterSpan cspanNearer;
-    ClusterSpan cspanFurther;
+    DetGroupSpan cspanNearer;
+    DetGroupSpan cspanFurther;
     float lower = 0;
     float upper = 0;
     if(cspanA.zSpan.first < 0 && cspanB.zSpan.first < 0){
@@ -740,7 +740,7 @@ bool PixelBadModules::getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, con
         }else {
             //edm::LogPrint("") << "No overlap, same disk propably. Spans:";
             //Stream ss;
-            //clusterSpanInfo(cspanA,ss);ss<<std::endl;clusterSpanInfo(cspanB,ss);ss<<std::endl;
+            //detGroupSpanInfo(cspanA,ss);ss<<std::endl;detGroupSpanInfo(cspanB,ss);ss<<std::endl;
             //edm::LogPrint("") << ss.str();ss.str(std::string());
             //edm::LogPrint("") << "**";
             return false;
@@ -757,9 +757,9 @@ bool PixelBadModules::getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, con
                 upper = std::numeric_limits<float>::infinity();
             }
         }else{
-            //edm::LogPrint("") << "No overlap, further cluster is lower. Spans:";
+            //edm::LogPrint("") << "No overlap, further detGroup is lower. Spans:";
             //Stream ss;
-            //clusterSpanInfo(cspanA,ss);ss<<std::endl;clusterSpanInfo(cspanB,ss);ss<<std::endl;
+            //detGroupSpanInfo(cspanA,ss);ss<<std::endl;detGroupSpanInfo(cspanB,ss);ss<<std::endl;
             //edm::LogPrint("") << ss.str();ss.str(std::string());
             //edm::LogPrint("") << "**";
             return false;
@@ -774,7 +774,7 @@ bool PixelBadModules::getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, con
         }else{
             //edm::LogPrint("") << "No overlap, same disk propably. Spans:";
             //Stream ss;
-            //clusterSpanInfo(cspanA,ss);ss<<std::endl;clusterSpanInfo(cspanB,ss);ss<<std::endl;
+            //detGroupSpanInfo(cspanA,ss);ss<<std::endl;detGroupSpanInfo(cspanB,ss);ss<<std::endl;
             //edm::LogPrint("") << ss.str();ss.str(std::string());
             //edm::LogPrint("") << "**";
             return false;
@@ -791,9 +791,9 @@ bool PixelBadModules::getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, con
                 lower = -std::numeric_limits<float>::infinity();
             }
         }else{
-            //edm::LogPrint("") << "No overlap, further cluster lower. Spans:";
+            //edm::LogPrint("") << "No overlap, further detGroup lower. Spans:";
             //Stream ss;
-            //clusterSpanInfo(cspanA,ss);ss<<std::endl;clusterSpanInfo(cspanB,ss);ss<<std::endl;
+            //detGroupSpanInfo(cspanA,ss);ss<<std::endl;detGroupSpanInfo(cspanB,ss);ss<<std::endl;
             //edm::LogPrint("") << ss.str();ss.str(std::string());
             //edm::LogPrint("") << "**";
             return false;
@@ -801,7 +801,7 @@ bool PixelBadModules::getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, con
     }else{       
         //edm::LogPrint("") << "No overlap, different sides of z axis. Spans:";
         //Stream ss;
-        //clusterSpanInfo(cspanA,ss);ss<<std::endl;clusterSpanInfo(cspanB,ss);ss<<std::endl;
+        //detGroupSpanInfo(cspanA,ss);ss<<std::endl;detGroupSpanInfo(cspanB,ss);ss<<std::endl;
         //edm::LogPrint("") << ss.str();ss.str(std::string());
         //edm::LogPrint("") << "**";
         return false;
@@ -810,7 +810,7 @@ bool PixelBadModules::getZAxisOverlapRangeEndcap(const ClusterSpan & cspanA, con
     return true;
 }
 
-bool PixelBadModules::getZAxisOverlapRangeBarrelEndcap(const ClusterSpan & cspanBar, const ClusterSpan & cspanEnd, std::pair<float,float> & range){
+bool PixelBadModules::getZAxisOverlapRangeBarrelEndcap(const DetGroupSpan & cspanBar, const DetGroupSpan & cspanEnd, std::pair<float,float> & range){
     float lower = 0;
     float upper = 0;
     if(cspanEnd.rSpan.second > cspanBar.rSpan.first){
@@ -850,14 +850,14 @@ bool PixelBadModules::getZAxisOverlapRangeBarrelEndcap(const ClusterSpan & cspan
 }
 PixelBadModules::OverlapSpansContainer PixelBadModules::overlappingSpans(float zAxisThreshold){    
     OverlapSpansContainer overlapSpansContainer;
-    // find clusterSpans ie phi,r,z limits for detector clusters that are not working
+    // find detGroupSpans ie phi,r,z limits for detector detGroups that are not working
     // returns pair where first is barrel spans and second endcap spans
-    ClusterSpanContainerPair cspans = clusterSpans();
+    DetGroupSpanContainerPair cspans = detGroupSpans();
 
-    // First comparison between barrel clusters
-    for(ClusterSpanContainer::const_iterator barSpanIt = cspans.first.begin(); barSpanIt != cspans.first.end();++barSpanIt){
+    // First comparison between barrel detGroups
+    for(DetGroupSpanContainer::const_iterator barSpanIt = cspans.first.begin(); barSpanIt != cspans.first.end();++barSpanIt){
         OverlapSpans overlapSpans;
-        for(ClusterSpanContainer::const_iterator compIt = barSpanIt+1;compIt != cspans.first.end();++compIt){
+        for(DetGroupSpanContainer::const_iterator compIt = barSpanIt+1;compIt != cspans.first.end();++compIt){
             if(phiRangesOverlap(barSpanIt->phiSpan,compIt->phiSpan)){
                 std::pair<float,float> range(0,0);
                 if(getZAxisOverlapRangeBarrel(*barSpanIt,*compIt,range)){
@@ -877,10 +877,10 @@ PixelBadModules::OverlapSpansContainer PixelBadModules::overlappingSpans(float z
     }
 
 
-    // Then comparison between endcap  clusters
-    for(ClusterSpanContainer::const_iterator endSpanIt = cspans.second.begin(); endSpanIt != cspans.second.end();++endSpanIt){
+    // Then comparison between endcap  detGroups
+    for(DetGroupSpanContainer::const_iterator endSpanIt = cspans.second.begin(); endSpanIt != cspans.second.end();++endSpanIt){
         OverlapSpans overlapSpans;
-        for(ClusterSpanContainer::const_iterator compIt = endSpanIt+1;compIt != cspans.second.end();++compIt){
+        for(DetGroupSpanContainer::const_iterator compIt = endSpanIt+1;compIt != cspans.second.end();++compIt){
             if(phiRangesOverlap(endSpanIt->phiSpan,compIt->phiSpan)){
                 std::pair<float,float> range(0,0);
                 if(getZAxisOverlapRangeEndcap(*endSpanIt,*compIt,range)){
@@ -899,10 +899,10 @@ PixelBadModules::OverlapSpansContainer PixelBadModules::overlappingSpans(float z
         }
     }
 
-    // Then comparison between barrel and endcap  clusters
-    for(ClusterSpanContainer::const_iterator barSpanIt = cspans.first.begin(); barSpanIt != cspans.first.end();++barSpanIt){
+    // Then comparison between barrel and endcap  detGroups
+    for(DetGroupSpanContainer::const_iterator barSpanIt = cspans.first.begin(); barSpanIt != cspans.first.end();++barSpanIt){
         OverlapSpans overlapSpans;
-        for(ClusterSpanContainer::const_iterator endSpanIt = cspans.second.begin();endSpanIt != cspans.second.end();++endSpanIt){
+        for(DetGroupSpanContainer::const_iterator endSpanIt = cspans.second.begin();endSpanIt != cspans.second.end();++endSpanIt){
             if(phiRangesOverlap(barSpanIt->phiSpan,endSpanIt->phiSpan)){
                 std::pair<float,float> range(0,0);
                 if(getZAxisOverlapRangeBarrelEndcap(*barSpanIt,*endSpanIt,range)){
@@ -924,5 +924,6 @@ PixelBadModules::OverlapSpansContainer PixelBadModules::overlappingSpans(float z
 
     return overlapSpansContainer;
 }
+
 DEFINE_FWK_MODULE(PixelBadModules);
 
