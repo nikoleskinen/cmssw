@@ -15,8 +15,7 @@ are in
 4. Clusters are then compared with each other to find out if there is overlap if we look them from z-axis inside pixel detector.
 
 ## Call graph
-![Call graph](cmssw/PixelTools/PixelBadModules/callGraph/callGraph.png)
-<img src="cmssw/PixelTools/PixelBadModules/callGraph/callGraph.png">
+![Call graph](callGraph/callGraph.png)
 ***
 
 ## Data containers and aliases
