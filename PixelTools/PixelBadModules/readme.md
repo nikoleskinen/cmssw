@@ -14,6 +14,9 @@ are in
 [surface class](http://cmsdoxygen.web.cern.ch/cmsdoxygen/CMSSW_9_2_0/doc/html/de/d10/classSurface.html).
 4. Clusters are then compared with each other to find out if there is overlap if we look them from z-axis inside pixel detector.
 
+## Call graph
+![Call graph](https://raw.githubusercontent.com/nikoleskinen/cmssw/SiPixelBadModulesDev/PixelTools/PixelBadModules/callGraph/callGraph.svg)
+<img src="https://raw.githubusercontent.com/nikoleskinen/cmssw/SiPixelBadModulesDev/PixelTools/PixelBadModules/callGraph/callGraph.svg">
 ***
 
 ## Data containers and aliases
