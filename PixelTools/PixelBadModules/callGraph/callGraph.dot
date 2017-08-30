@@ -1,0 +1,33 @@
+digraph {
+    rankdir=BT;
+    detGroupSpans -> overlappingSpans[penwidth=3];
+    phiRangesOverlap -> detGroupSpans;
+    getZAxisOverlapRangeBarrel -> detGroupSpans;
+    getZAxisOverlapRangeEndcap -> detGroupSpans;
+    getZAxisOverlapRangeBarrelEndcap -> detGroupSpans;
+    zAxisIntersection -> getZAxisOverlapRangeBarrel;
+    zAxisIntersection -> getZAxisOverlapRangeEndcap;
+    zAxisIntersection -> getZAxisOverlapRangeBarrelEndcap;
+    
+
+
+    badDetGroupsBarrel -> detGroupSpans[penwidth=3];
+    badDetGroupsEndcap -> detGroupSpans[penwidth=3];
+
+    getSpan -> detGroupSpans;
+    getPhiSpanBarrel -> getSpan;
+    getPhiSpanEndcap -> getSpan;
+    phiRangesOverlap_ -> getPhiSpanEndcap;
+    
+    getZSpan -> getSpan;
+    getRSpan -> getSpan;
+    
+
+    reachableDetGroup -> badDetGroupsBarrel[penwidth=3];
+    reachableDetGroup -> badDetGroupsEndcap[penwidth=3];
+
+    badAdjecentDetsBarrel -> reachableDetGroup[penwidth=3];
+    badAdjecentDetsEndcap -> reachableDetGroup[penwidth=3];
+    phiRangesOverlap__ -> badAdjecentDetsEndcap ;
+     
+}
