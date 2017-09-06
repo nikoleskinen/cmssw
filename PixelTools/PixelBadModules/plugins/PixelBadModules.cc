@@ -23,6 +23,7 @@
 #include <limits>
 #include <ctime>
 #include <chrono>
+#include <fstream>
 class PixelBadModules : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     public:
         //analyzer functions
@@ -97,6 +98,7 @@ class PixelBadModules : public edm::one::EDAnalyzer<edm::one::SharedResources>  
         void printBadDetGroups();
         void printBadDetGroupSpans();
         void printOverlapSpans();
+        void createPlottingFiles();
         // Functions for finding bad detGroups
         static bool phiRangesOverlap(const float x1,const float x2, const float y1,const float y2);
         static bool phiRangesOverlap(const Span_t&phiSpanA, const Span_t&phiSpanB);
@@ -139,6 +141,8 @@ void PixelBadModules::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     this->getPixelDetsBarrel();
     this->getPixelDetsEndcap();
     this->getBadPixelDets();
+    //write files for plottind
+    this->createPlottingFiles();
     //timer
     std::chrono::time_point<std::chrono::system_clock> start,end;
     start = std::chrono::system_clock::now();
@@ -324,6 +328,46 @@ void PixelBadModules::printOverlapSpans(){
         }
     }
     edm::LogPrint("") << ss.str();
+}
+void PixelBadModules::createPlottingFiles(){
+    // All detectors to file DETECTORS
+    Stream ss;
+    std::ofstream fsDet("DETECTORS.txt");
+    for(auto const & det : pixelDetsBarrel){
+        detInfo(det,ss);
+        ss << std::endl;
+    }
+    edm::LogPrint("") << "Endcap detectors;";
+    for(auto const & det : pixelDetsEndcap){
+        detInfo(det,ss);
+        ss << std::endl;
+    }
+    fsDet << ss.rdbuf();
+    ss.str(std::string());
+    // Bad detectors
+    std::ofstream fsBadDet("BADDETECTORS.txt");
+    for(auto const & det : badPixelDetsBarrel){
+        detInfo(det,ss);
+        ss<<std::endl;
+    }
+    for(auto const & det : badPixelDetsEndcap){
+        detInfo(det,ss);
+        ss<<std::endl;
+    }
+    fsBadDet << ss.rdbuf();
+    ss.str(std::string());
+    // detgroupspans
+    std::ofstream fsSpans("DETGROUPSPANS.txt");
+    DetGroupSpanContainerPair cspans = detGroupSpans();
+    for(auto const & cspan : cspans.first){
+        detGroupSpanInfo(cspan,ss);ss<<std::endl;
+    }
+    for(auto const & cspan : cspans.second){
+        detGroupSpanInfo(cspan,ss);ss<<std::endl;
+    }
+    fsSpans << ss.rdbuf();
+    ss.str(std::string());
+
 }
 // Functions for finding bad detGroups
 bool PixelBadModules::phiRangesOverlap(const float x1,const float x2, const float y1,const float y2){
