@@ -4,18 +4,38 @@
 This class provides functions for searching overlappling detector areas that contains
 detectors that are not working.
 
-Procedure for finding these areas are:
-1. Fetch raw IDs of barrel, endcap and bad detector into containers.
-2. Find detGroups of bad detectors i.e. partition bad detectors into detGroups. 
-In these detGroups each detector is adjecent to some other bad detector in same detGroup
-3. Abstract away detector data from detGroups by finding verges of detGroup. 
-These verges are represented as phiSpan, rSpan, zSpan in same way that single modules 
-are in 
-[surface class](http://cmsdoxygen.web.cern.ch/cmsdoxygen/CMSSW_9_2_0/doc/html/de/d10/classSurface.html).
-4. DetGroups are then compared with each other to find out if there is overlap if we look them from z-axis inside pixel detector.
 
-## Call graph
+## Call graph and program progress
 ![Call graph](callGraph/callGraph.png)
+
+Above figure illustrates function call dependencies.
+Following procedure is conducted while searching overlapping inactive detector groups.
+1. First fetch pixel quality, tracker geometry and topology information into `edm::ESHandle`s
+    1. Detectors' raw IDs into `pixelDetsBarrel` and `pixelDetsEndcap`
+    2. Inactive detectors' raw IDs into `badPixelDetsBarrel` and `badPixelDetsEndcap`
+2. Partition inactive detectors into `detGroup`s. One partition i.e. `detGroup` 
+contains detectors that are inactive and adjecent to some other inactive detector 
+in same `detGroup`.
+Therefore, in one detGroup it is possible to travel from one detector to other just using 
+adjecent detectors. Hence, we can use breadth-first search for finding these `detGroups`
+    1. Pick one inactive detector that is not yet included into `detGroup`
+    2. Find all inactive detectors that are reachable from this detector 
+    i.e. do breadth-first search (`reachableDetGroup`)
+    3. Form `detGroup` from found detectors
+    4. Go to first step if any unpartitioned detectors are left
+3. Find spans for `detGroups`. These spans are analogic to singular detector's spans
+([surface class](http://cmsdoxygen.web.cern.ch/cmsdoxygen/CMSSW_9_2_0/doc/html/de/d10/classSurface.html))
+(`detGroupSpans`)
+    1. z and r spans are quite easy, but with phi span we use a little modulus arithmetics in order to 
+    find where detGroup starts and ends in phi dimension
+4. Compare `detGroup`s with each other so we find which one overlap while we look from z-axis, inside pixel detector.
+(`overlappingSpans`)
+    1. First check if phiSpans overlap
+    2. if they overlap, check if there is range in z-axis where `detGroup`s overlap
+    in z-r-dimension.
+    3. If there is some range, check if range is within some threshold (default=inf).
+    If it is, add span to container that will be returned as output
+
 ***
 
 ## Data containers and aliases
@@ -117,3 +137,14 @@ are in
     * Function is not included into other code in any way
     * It calculates two possible circles that go via points p1 and p2 if possible
     * Centers of these circles must be in line that is perpendicular to line that goes via p1 and p2. Line must also go via midpoint of p1 and p2. Distance from midpoint to center of circle can be calculated using pythagoras
+
+
+## N.B.
+Program does not care if detGroups are adjecent or not so overlappingSpans return spans even
+if detGroups are for example in layers or disks 1 and 3. Adjecency check can be implemented 
+in `overlappingSpans` function, in beginning of the for-loops
+
+## TODO
+* Curvature of particle tracks is not considered, thought there is one function for this purpose
+(`getCirclesViaTwoPoints`).
+    * One possibility is to replace `zAxisIntersection`-function with function that calculates where circle intersects with z-axis 
