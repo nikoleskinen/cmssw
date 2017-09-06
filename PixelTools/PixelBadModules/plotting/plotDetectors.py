@@ -147,9 +147,9 @@ def plotClusterSpans(spans,fig=None,ax=None,**kwargs):
 
     pass
 if __name__ == "__main__":
-    B,E = readDetectors('DETECTORS')
-    BB,BE = readDetectors('BADDETECTORS')
-    spans = readClusterSpans('CLUSTERSPANS')
+    B,E = readDetectors('../DETECTORS.txt')
+    BB,BE = readDetectors('../BADDETECTORS.txt')
+    spans = readClusterSpans('../DETGROUPSPANS.txt')
     fig,ax = plotClusterSpans(spans)
     #fig,ax = plotdetectorsBarrel(B,None,None,color='k',alpha=0.02)
     #fig,ax = plotdetectorsEndcap(E,fig,ax,color='k',alpha=0.02)
